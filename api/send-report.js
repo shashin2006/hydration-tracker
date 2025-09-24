@@ -1,27 +1,15 @@
-const express = require('express');
 const nodemailer = require('nodemailer');
-const cors = require('cors');
-const bodyParser = require('body-parser');
-const path = require('path');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.static('public'));
 
 // Email configuration
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'hydratrac@gmail.com',
-        pass: 'vkpg buwi kxsp krnf'
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS
     }
 });
 
-// Email template function - CORRECTED VERSION
+// Email template function
 function createEmailTemplate(reportData) {
     // Format time for display in email
     const formatTimeForEmail = (timeString) => {
@@ -84,57 +72,48 @@ function createEmailTemplate(reportData) {
     `;
 }
 
-// Test email connection
-transporter.verify(function(error, success) {
-    if (error) {
-        console.log('Email connection error:', error);
+module.exports = async (req, res) => {
+    // Set CORS headers
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+    
+    // Handle OPTIONS request for CORS preflight
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+    
+    if (req.method === 'POST') {
+        try {
+            const reportData = req.body;
+            
+            // Email options
+            const mailOptions = {
+                from: '"HydraTrac System" <hydratrac@gmail.com>',
+                to: 'shashinrajkumar@gmail.com',
+                subject: `💧 Hydration Report - ${reportData.date} - ${Math.round(reportData.percentage)}% Complete`,
+                html: createEmailTemplate(reportData)
+            };
+
+            // Send email
+            await transporter.sendMail(mailOptions);
+            
+            console.log('Email sent successfully');
+            res.status(200).json({ 
+                success: true, 
+                message: 'Report submitted and email sent successfully'
+            });
+            
+        } catch (error) {
+            console.error('Error sending email:', error);
+            res.status(500).json({ 
+                success: false, 
+                message: 'Failed to send email: ' + error.message
+            });
+        }
     } else {
-        console.log('Email server is ready to send messages');
+        res.status(405).json({ message: 'Method not allowed' });
     }
-});
-
-// API endpoint to send report email
-app.post('/api/send-report', async (req, res) => {
-    try {
-        const reportData = req.body;
-        console.log('Received report data');
-        
-        // Email options
-        const mailOptions = {
-            from: '"HydraTrac System" <hydratrac@gmail.com>',
-            to: 'shashinrajkumar@gmail.com',
-            subject: `💧 Hydration Report - ${reportData.date} - ${Math.round(reportData.percentage)}% Complete`,
-            html: createEmailTemplate(reportData)
-        };
-
-        // Send email
-        await transporter.sendMail(mailOptions);
-        
-        console.log('Email sent successfully');
-        res.json({ 
-            success: true, 
-            message: 'Report submitted and email sent successfully'
-        });
-        
-    } catch (error) {
-        console.error('Error sending email:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to send email: ' + error.message
-        });
-    }
-});
-
-// Test endpoint
-app.get('/api/test', (req, res) => {
-    res.json({ message: 'Server is running!' });
-});
-
-// Serve the main page
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-}); 
+};

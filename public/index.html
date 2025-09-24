@@ -598,7 +598,7 @@ async function sendReport() {
         };
         
         // Send to backend
-        const response = await fetch('http://localhost:3000/api/send-report', {
+        const response = await fetch('api/send-report', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
