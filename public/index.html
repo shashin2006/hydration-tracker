@@ -597,8 +597,8 @@ async function sendReport() {
             location: getLocation()
         };
         
-        // Send to backend
-        const response = await fetch('api/send-report', {
+        // Send to Vercel API
+        const response = await fetch('/api/send-report', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -616,7 +616,7 @@ async function sendReport() {
             sendModal.style.display = 'none';
             showPage('submission-page');
         } else {
-            alert('Failed to send report. Please try again.');
+            alert('Failed to send report: ' + result.message);
         }
         
     } catch (error) {
@@ -627,6 +627,7 @@ async function sendReport() {
         confirmSendBtn.innerHTML = 'Send';
         confirmSendBtn.disabled = false;
     }
+}
 }
             // Display submission details on the submission page
             function displaySubmissionDetails(reportData) {
