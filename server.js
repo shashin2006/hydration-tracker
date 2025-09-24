@@ -2,7 +2,6 @@ const express = require('express');
 const nodemailer = require('nodemailer');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -10,14 +9,14 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static('public'));
 
-// Use environment variables for email configuration
+// Email configuration - CORRECT VERSION
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: process.env.GMAIL_USER || 'hydratrac@gmail.com',
-        pass: process.env.GMAIL_PASS || 'vkpg buwi kxsp krnf'
+        user: 'hydratrac@gmail.com',
+        pass: 'vkpg buwi kxsp krnf'
     }
 });
 
@@ -56,19 +55,14 @@ function createEmailTemplate(reportData) {
 
                 <h3>💧 Goal Status:</h3>
                 <ul class="goal-list">
-                    ${reportData.goals.map(goal => {
-                        const [hours, minutes] = goal.time.split(':');
-                        const hour = parseInt(hours);
-                        const period = hour >= 12 ? 'PM' : 'AM';
-                        const displayHour = hour % 12 || 12;
-                        return `
+                    ${reportData.goals.map(goal => `
                         <li class="goal-item">
-                            <strong>${displayHour} ${period}:</strong> ${goal.label} - 
+                            <strong>${goal.timeDisplay}:</strong> ${goal.label} - 
                             <span class="${goal.completed ? 'completed' : 'pending'}">
                                 ${goal.completed ? '✅ Completed' : '⏳ ' + goal.status}
                             </span>
-                        </li>`;
-                    }).join('')}
+                        </li>
+                    `).join('')}
                 </ul>
             </div>
             
@@ -80,11 +74,33 @@ function createEmailTemplate(reportData) {
     `;
 }
 
+// Test email connection
+transporter.verify(function(error, success) {
+    if (error) {
+        console.log('Email connection error:', error);
+    } else {
+        console.log('Email server is ready to send messages');
+    }
+});
+
 // API endpoint to send report email
 app.post('/api/send-report', async (req, res) => {
     try {
         const reportData = req.body;
+        console.log('Received report data');
         
+        // Format time for display in email
+        reportData.goals = reportData.goals.map(goal => {
+            const [hours, minutes] = goal.time.split(':');
+            const hour = parseInt(hours);
+            const period = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 || 12;
+            return {
+                ...goal,
+                timeDisplay: `${displayHour} ${period}`
+            };
+        });
+
         // Email options
         const mailOptions = {
             from: '"HydraTrac System" <hydratrac@gmail.com>',
@@ -96,6 +112,7 @@ app.post('/api/send-report', async (req, res) => {
         // Send email
         await transporter.sendMail(mailOptions);
         
+        console.log('Email sent successfully');
         res.json({ 
             success: true, 
             message: 'Report submitted and email sent successfully'
@@ -110,26 +127,15 @@ app.post('/api/send-report', async (req, res) => {
     }
 });
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
-        message: 'Hydration Tracker API is running',
-        timestamp: new Date().toISOString()
-    });
+// Test endpoint
+app.get('/api/test', (req, res) => {
+    res.json({ message: 'Server is running!' });
 });
 
-// Serve the frontend
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.get('/', (req, res) => {
+    res.send('Hydration Tracker Backend is running!');
 });
 
-// Vercel requires module.exports for serverless functions
-module.exports = app;
-
-// Only listen if not in Vercel environment
-if (require.main === module) {
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-    });
-}
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+});
