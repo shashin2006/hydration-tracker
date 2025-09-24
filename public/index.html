@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hydration Tracker | Stay Hydrated</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Pacifico&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .pacifico-font {
+            font-family: 'Pacifico', cursive;
+        }
+        /* Custom checkbox styling */
+        .custom-checkbox {
+            display: none;
+        }
+        .custom-checkbox + label {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid #a7f3d0;
+            background-color: #d1fae5;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease-in-out;
+        }
+        .custom-checkbox:checked + label {
+            background-color: #34d399;
+            border-color: #10b981;
+            transform: scale(1.1);
+        }
+        .custom-checkbox:checked + label svg {
+            display: block;
+        }
+        /* Time status styling */
+        .time-status {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        .status-upcoming {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        .status-current {
+            background-color: #fef3c7;
+            color: #d97706;
+        }
+        .status-overdue {
+            background-color: #fee2e2;
+            color: #dc2626;
+        }
+        .status-completed {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: white;
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        /* Loading spinner */
+        .spinner {
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #3b82f6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        /* Confetti styles */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background-color: #f0f;
+            opacity: 0.7;
+            animation: confetti-fall 2s ease-out forwards;
+        }
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+        /* Page transition */
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-blue-50 min-h-screen p-4">
+    <!-- Main Hydration Tracker Page -->
+    <div id="tracker-page" class="page active">
+        <main class="bg-white rounded-2xl shadow-lg max-w-md w-full mx-auto p-6 md:p-8">
+            <div class="text-center mb-6">
+                <div class="flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 7a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                        <path d="M10 12a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1z" />
+                    </svg>
+                    <h1 class="pacifico-font text-3xl text-blue-500">Stay Hydrated!</h1>
+                </div>
+                <p class="text-gray-500 mt-2">Your water goals for the day.</p>
+            </div>
+
+            <!-- Water Intake Slots -->
+            <div id="tracker-list" class="space-y-4">
+                <!-- JS will populate this section -->
+            </div>
+
+            <!-- Progress Bar & Motivational Message -->
+            <div class="mt-8 text-center">
+                <div class="w-full bg-pink-100 rounded-full h-2.5">
+                    <div id="progress-bar" class="bg-pink-400 h-2.5 rounded-full" style="width: 0%; transition: width 0.5s ease-in-out;"></div>
+                </div>
+                <p id="motivational-message" class="text-green-600 font-semibold text-lg mt-4 h-6 transition-opacity duration-300"></p>
+            </div>
+
+            <!-- Buttons -->
+            <div class="mt-6 text-center flex justify-between">
+                <button onclick="window.print()" class="bg-gray-500 text-white font-bold py-2 px-6 rounded-full hover:bg-gray-600 transition duration-300 shadow-md">
+                    Print Report
+                </button>
+                <button id="send-report-btn" class="bg-blue-500 text-white font-bold py-2 px-6 rounded-full hover:bg-blue-600 transition duration-300 shadow-md">
+                    Send Report
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Report Submission Page -->
+    <div id="submission-page" class="page">
+        <main class="bg-white rounded-2xl shadow-lg max-w-md w-full mx-auto p-6 md:p-8">
+            <div class="text-center mb-6">
+                <div class="flex items-center justify-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 7a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                        <path d="M10 12a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1z" />
+                    </svg>
+                    <h1 class="pacifico-font text-3xl text-blue-500">Report Submitted!</h1>
+                </div>
+                <p class="text-gray-500 mt-2">Your hydration data has been recorded.</p>
+            </div>
+
+            <div id="submission-details" class="bg-blue-50 p-4 rounded-lg mb-6">
+                <!-- Submission details will be populated here -->
+            </div>
+
+            <div class="text-center">
+                <button id="back-to-tracker" class="bg-blue-500 text-white font-bold py-2 px-6 rounded-full hover:bg-blue-600 transition duration-300 shadow-md">
+                    Back to Tracker
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for sending report -->
+    <div id="send-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold mb-4">Send Hydration Report</h2>
+            <p class="mb-4">Your hydration report will be sent to the central monitoring system.</p>
+            <div class="flex justify-between">
+                <button id="cancel-send" class="bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded hover:bg-gray-400 transition duration-300">
+                    Cancel
+                </button>
+                <button id="confirm-send" class="bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600 transition duration-300">
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for entering previous time -->
+    <div id="previous-time-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold mb-4">Log Previous Hour</h2>
+            <p class="mb-4">You can log water intake for the previous hour.</p>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2" for="previous-hour">
+                    Select Previous Hour:
+                </label>
+                <select id="previous-hour" class="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                    <!-- Options will be populated by JavaScript -->
+                </select>
+            </div>
+            <div class="flex justify-between">
+                <button id="cancel-previous" class="bg-gray-300 text-gray-700 font-bold py-2 px-4 rounded hover:bg-gray-400 transition duration-300">
+                    Cancel
+                </button>
+                <button id="confirm-previous" class="bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600 transition duration-300">
+                    Log Intake
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Page elements
+            const trackerPage = document.getElementById('tracker-page');
+            const submissionPage = document.getElementById('submission-page');
+            const trackerList = document.getElementById('tracker-list');
+            const progressBar = document.getElementById('progress-bar');
+            const motivationalMessage = document.getElementById('motivational-message');
+            const sendReportBtn = document.getElementById('send-report-btn');
+            const sendModal = document.getElementById('send-modal');
+            const submissionDetails = document.getElementById('submission-details');
+            const backToTrackerBtn = document.getElementById('back-to-tracker');
+            const cancelSendBtn = document.getElementById('cancel-send');
+            const confirmSendBtn = document.getElementById('confirm-send');
+            const previousTimeModal = document.getElementById('previous-time-modal');
+            const previousHourSelect = document.getElementById('previous-hour');
+            const cancelPreviousBtn = document.getElementById('cancel-previous');
+            const confirmPreviousBtn = document.getElementById('confirm-previous');
+
+            // Define water goals with their target times
+            const waterGoals = [
+                { time: '08:00', label: 'Morning Rise & Shine' },
+                { time: '10:00', label: 'Mid-Morning Boost' },
+                { time: '12:00', label: 'Lunchtime Sip' },
+                { time: '14:00', label: 'Afternoon Refresh' },
+                { time: '16:00', label: 'Stay Energized' },
+                { time: '18:00', label: 'Evening Hydration' },
+                { time: '20:00', label: 'Winding Down' },
+                { time: '21:00', label: 'One Last Glass!' }
+            ];
+            
+            const totalGoals = waterGoals.length;
+            let completedGoals = 0;
+            let goalStatuses = Array(totalGoals).fill(false); // Track completion status
+            let currentHourIndex = -1; // Track current hour index
+
+            // Initialize the app
+            function initApp() {
+                populateTrackerList();
+                updateCurrentHour();
+                updateProgress();
+                setupEventListeners();
+                updateTimeStatuses(); // Initial update
+                
+                // Update time statuses every minute
+                setInterval(updateTimeStatuses, 60000);
+            }
+
+            // Populate the tracker list with water goals
+            function populateTrackerList() {
+                trackerList.innerHTML = '';
+                
+                waterGoals.forEach((goal, index) => {
+                    const id = `goal-${index}`;
+                    const status = getTimeStatus(goal.time, index);
+                    
+                    const itemHTML = `
+                        <div class="flex items-center justify-between p-4 rounded-xl bg-gray-50 border border-gray-200 ${status === 'overdue' ? 'border-red-200 bg-red-50' : ''}">
+                            <div class="flex items-center gap-4">
+                                <svg class="w-6 h-6 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                                </svg>
+                                <div>
+                                    <p class="font-semibold text-gray-700">${formatTime(goal.time)}</p>
+                                    <p class="text-sm text-gray-500">${goal.label}</p>
+                                    <span class="time-status status-${status}">${getStatusText(status)}</span>
+                                </div>
+                            </div>
+                            <div>
+                                <input type="checkbox" id="${id}" class="custom-checkbox" ${status === 'completed' ? 'checked' : ''} ${isCheckboxDisabled(status, index) ? 'disabled' : ''}>
+                                <label for="${id}" class="${isCheckboxDisabled(status, index) ? 'opacity-50 cursor-not-allowed' : ''}">
+                                    <svg class="w-4 h-4 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </label>
+                            </div>
+                        </div>
+                    `;
+                    trackerList.innerHTML += itemHTML;
+                });
+
+                // Add event listeners to all checkboxes
+                const checkboxes = document.querySelectorAll('.custom-checkbox');
+                checkboxes.forEach((checkbox, index) => {
+                    checkbox.addEventListener('change', () => {
+                        goalStatuses[index] = checkbox.checked;
+                        updateProgress();
+                    });
+                });
+            }
+
+            // Set up event listeners
+            function setupEventListeners() {
+                sendReportBtn.addEventListener('click', () => {
+                    sendModal.style.display = 'flex';
+                });
+
+                cancelSendBtn.addEventListener('click', () => {
+                    sendModal.style.display = 'none';
+                });
+
+                confirmSendBtn.addEventListener('click', sendReport);
+
+                backToTrackerBtn.addEventListener('click', () => {
+                    showPage('tracker-page');
+                });
+
+                cancelPreviousBtn.addEventListener('click', () => {
+                    previousTimeModal.style.display = 'none';
+                });
+
+                confirmPreviousBtn.addEventListener('click', logPreviousHour);
+
+                // Close modals when clicking outside
+                window.addEventListener('click', (event) => {
+                    if (event.target === sendModal) {
+                        sendModal.style.display = 'none';
+                    }
+                    if (event.target === previousTimeModal) {
+                        previousTimeModal.style.display = 'none';
+                    }
+                });
+            }
+
+            // Update progress bar and motivational message
+            function updateProgress() {
+                completedGoals = goalStatuses.filter(status => status).length;
+                const percentage = (completedGoals / totalGoals) * 100;
+                progressBar.style.width = `${percentage}%`;
+
+                // Update motivational message
+                if (completedGoals === 0) {
+                    motivationalMessage.textContent = 'Let\'s start hydrating!';
+                } else if (completedGoals < totalGoals / 2) {
+                    motivationalMessage.textContent = 'Great start!';
+                } else if (completedGoals < totalGoals) {
+                    motivationalMessage.textContent = 'You\'re halfway there!';
+                } else if (completedGoals === totalGoals) {
+                    motivationalMessage.textContent = 'Hydration Goal Achieved!';
+                    triggerConfetti();
+                }
+                motivationalMessage.classList.add('opacity-100');
+            }
+
+            // Update time statuses for all goals
+            function updateTimeStatuses() {
+                updateCurrentHour();
+                
+                waterGoals.forEach((goal, index) => {
+                    const status = getTimeStatus(goal.time, index);
+                    const goalElement = document.getElementById(`goal-${index}`).parentElement.parentElement;
+                    const statusElement = goalElement.querySelector('.time-status');
+                    const checkbox = document.getElementById(`goal-${index}`);
+                    const label = checkbox.nextElementSibling;
+                    
+                    // Update status class and text
+                    statusElement.className = `time-status status-${status}`;
+                    statusElement.textContent = getStatusText(status);
+                    
+                    // Update checkbox state
+                    if (status === 'completed') {
+                        checkbox.checked = true;
+                        goalStatuses[index] = true;
+                    }
+                    
+                    // Update border color for overdue items
+                    if (status === 'overdue' && !goalStatuses[index]) {
+                        goalElement.classList.add('border-red-200', 'bg-red-50');
+                    } else {
+                        goalElement.classList.remove('border-red-200', 'bg-red-50');
+                    }
+                    
+                    // Enable/disable checkbox based on status
+                    if (isCheckboxDisabled(status, index)) {
+                        checkbox.disabled = true;
+                        label.classList.add('opacity-50', 'cursor-not-allowed');
+                    } else {
+                        checkbox.disabled = false;
+                        label.classList.remove('opacity-50', 'cursor-not-allowed');
+                    }
+                });
+                
+                updateProgress();
+                
+                // Check if we should show the previous time modal
+                checkForPreviousTimeEntry();
+            }
+
+            // Determine if a checkbox should be disabled
+            function isCheckboxDisabled(status, index) {
+                // Allow checking for current and overdue items
+                // Also allow for the previous hour (if within the allowed window)
+                if (status === 'current' || status === 'overdue') {
+                    return false;
+                }
+                
+                // Allow for the previous hour if it's within 1 hour of the current time
+                if (index === currentHourIndex - 1) {
+                    const now = new Date();
+                    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                    const goalMinutes = parseInt(waterGoals[index].time.split(':')[0]) * 60 + parseInt(waterGoals[index].time.split(':')[1]);
+                    
+                    // Allow if it's within 1 hour of the goal time
+                    return currentMinutes - goalMinutes > 60;
+                }
+                
+                // Disable for all other cases
+                return true;
+            }
+
+            // Check if we should show the previous time entry modal
+            function checkForPreviousTimeEntry() {
+                const now = new Date();
+                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                
+                // Check if current hour is valid and previous hour exists
+                if (currentHourIndex > 0 && currentHourIndex < waterGoals.length) {
+                    const previousGoal = waterGoals[currentHourIndex - 1];
+                    const goalMinutes = parseInt(previousGoal.time.split(':')[0]) * 60 + parseInt(previousGoal.time.split(':')[1]);
+                    
+                    // Show modal if previous hour is within the last hour and not completed
+                    if (currentMinutes - goalMinutes <= 60 && !goalStatuses[currentHourIndex - 1]) {
+                        showPreviousTimeModal();
+                    }
+                }
+            }
+
+            // Show modal for logging previous hour
+            function showPreviousTimeModal() {
+                // Populate the select with previous hour options
+                previousHourSelect.innerHTML = '';
+                
+                // Only show the immediate previous hour
+                if (currentHourIndex > 0) {
+                    const previousGoal = waterGoals[currentHourIndex - 1];
+                    const option = document.createElement('option');
+                    option.value = currentHourIndex - 1;
+                    option.textContent = `${formatTime(previousGoal.time)} - ${previousGoal.label}`;
+                    previousHourSelect.appendChild(option);
+                }
+                
+                previousTimeModal.style.display = 'flex';
+            }
+
+            // Log water intake for a previous hour
+            function logPreviousHour() {
+                const selectedIndex = parseInt(previousHourSelect.value);
+                
+                if (!isNaN(selectedIndex) && selectedIndex >= 0 && selectedIndex < waterGoals.length) {
+                    // Mark the goal as completed
+                    goalStatuses[selectedIndex] = true;
+                    document.getElementById(`goal-${selectedIndex}`).checked = true;
+                    
+                    // Update the UI
+                    updateProgress();
+                    updateTimeStatuses();
+                    
+                    // Close the modal
+                    previousTimeModal.style.display = 'none';
+                    
+                    // Show confirmation
+                    alert(`Water intake logged for ${formatTime(waterGoals[selectedIndex].time)}`);
+                }
+            }
+
+            // Update the current hour index based on the current time
+            function updateCurrentHour() {
+                const now = new Date();
+                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                
+                // Find the current hour based on water goals
+                for (let i = 0; i < waterGoals.length; i++) {
+                    const goalMinutes = parseInt(waterGoals[i].time.split(':')[0]) * 60 + parseInt(waterGoals[i].time.split(':')[1]);
+                    
+                    // If current time is past this goal's time, this is the current hour
+                    if (currentMinutes >= goalMinutes) {
+                        currentHourIndex = i;
+                    } else {
+                        break;
+                    }
+                }
+                
+                // If no current hour found, set to -1 (before the first goal)
+                if (currentHourIndex === -1 && waterGoals.length > 0) {
+                    const firstGoalMinutes = parseInt(waterGoals[0].time.split(':')[0]) * 60 + parseInt(waterGoals[0].time.split(':')[1]);
+                    if (currentMinutes < firstGoalMinutes) {
+                        currentHourIndex = -1;
+                    }
+                }
+            }
+
+            // Determine time status for a goal
+            function getTimeStatus(targetTime, index) {
+                // If completed, return completed status
+                if (goalStatuses[index]) {
+                    return 'completed';
+                }
+                
+                const now = new Date();
+                const currentMinutes = now.getHours() * 60 + now.getMinutes();
+                const targetMinutes = parseInt(targetTime.split(':')[0]) * 60 + parseInt(targetTime.split(':')[1]);
+                
+                // Calculate time difference
+                const timeDiff = targetMinutes - currentMinutes;
+                
+                if (timeDiff > 60) {
+                    return 'upcoming';
+                } else if (timeDiff > 0) {
+                    return 'current';
+                } else {
+                    return 'overdue';
+                }
+            }
+
+            // Get status text for display
+            function getStatusText(status) {
+                switch(status) {
+                    case 'upcoming': return 'Upcoming';
+                    case 'current': return 'Current';
+                    case 'overdue': return 'Overdue - Log Now!';
+                    case 'completed': return 'Completed';
+                    default: return '';
+                }
+            }
+
+            // Format time for display
+            function formatTime(timeString) {
+                const [hours, minutes] = timeString.split(':');
+                const hour = parseInt(hours);
+                const period = hour >= 12 ? 'PM' : 'AM';
+                const displayHour = hour % 12 || 12;
+                return `${displayHour} ${period}`;
+            }
+
+            // Show a specific page
+            function showPage(pageId) {
+                document.querySelectorAll('.page').forEach(page => {
+                    page.classList.remove('active');
+                });
+                document.getElementById(pageId).classList.add('active');
+            }
+
+            // Send report to the submission page
+            // Send report to backend and trigger email
+async function sendReport() {
+    // Show loading state
+    confirmSendBtn.innerHTML = '<div class="spinner"></div>';
+    confirmSendBtn.disabled = true;
+    
+    try {
+        // Create report data
+        const reportData = {
+            date: new Date().toLocaleDateString(),
+            time: new Date().toLocaleTimeString(),
+            goals: waterGoals.map((goal, index) => ({
+                time: goal.time,
+                label: goal.label,
+                completed: goalStatuses[index],
+                status: getTimeStatus(goal.time, index)
+            })),
+            totalCompleted: completedGoals,
+            totalGoals: totalGoals,
+            percentage: (completedGoals / totalGoals) * 100,
+            location: getLocation()
+        };
+        
+        // Send to backend
+        const response = await fetch('api/send-report', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(reportData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Display submission details
+            displaySubmissionDetails(reportData);
+            
+            // Show success message and switch to submission page
+            sendModal.style.display = 'none';
+            showPage('submission-page');
+        } else {
+            alert('Failed to send report. Please try again.');
+        }
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error sending report. Please check your connection.');
+    } finally {
+        // Reset button
+        confirmSendBtn.innerHTML = 'Send';
+        confirmSendBtn.disabled = false;
+    }
+}
+            // Display submission details on the submission page
+            function displaySubmissionDetails(reportData) {
+                let detailsHTML = `
+                    <h3 class="font-bold text-lg mb-2">Submission Summary</h3>
+                    <p><strong>Date:</strong> ${reportData.date}</p>
+                    <p><strong>Time:</strong> ${reportData.time}</p>
+                    <p><strong>Location:</strong> ${reportData.location.city}, ${reportData.location.region}</p>
+                    <p><strong>Completion:</strong> ${reportData.totalCompleted} of ${totalGoals} goals (${Math.round(reportData.percentage)}%)</p>
+                    <div class="mt-4">
+                        <h4 class="font-bold mb-1">Goal Status:</h4>
+                        <ul class="list-disc pl-5">
+                `;
+                
+                reportData.goals.forEach(goal => {
+                    const statusIcon = goal.completed ? '✅' : '⏳';
+                    detailsHTML += `<li>${formatTime(goal.time)}: ${goal.label} - ${statusIcon} ${goal.status}</li>`;
+                });
+                
+                detailsHTML += `</ul></div>`;
+                
+                submissionDetails.innerHTML = detailsHTML;
+            }
+
+            // Simulate getting user location
+            function getLocation() {
+                const locations = [
+                    { city: 'Chennai', region: 'Tamil Nadu' },
+                    { city: 'Kanchipuram', region: 'Tamil Nadu' },
+                    { city: 'Coimbatore', region: 'Tamil Nadu' },
+                    { city: 'Madurai', region: 'Tamil Nadu' }
+                ];
+                return locations[Math.floor(Math.random() * locations.length)];
+            }
+
+            // Confetti animation for goal completion
+            function triggerConfetti() {
+                for (let i = 0; i < 100; i++) {
+                    createConfetti();
+                }
+            }
+
+            function createConfetti() {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                
+                const colors = ['#f87171', '#fb923c', '#fbbf24', '#a3e635', '#4ade80', '#38bdf8', '#818cf8', '#f472b6'];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                confetti.style.backgroundColor = randomColor;
+                confetti.style.left = `${Math.random() * 100}vw`;
+                confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+                confetti.style.width = `${Math.floor(Math.random() * 8) + 8}px`;
+                confetti.style.height = `${Math.floor(Math.random() * 5) + 5}px`;
+
+                document.body.appendChild(confetti);
+
+                setTimeout(() => {
+                    confetti.remove();
+                }, 2000);
+            }
+
+            // Initialize the app
+            initApp();
+        });
+    </script>
+</body>
+</html>
