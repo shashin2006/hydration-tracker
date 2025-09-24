@@ -575,6 +575,7 @@
 
             // Send report to the submission page
             // Send report to backend and trigger email
+    // Send report to backend and trigger email
 async function sendReport() {
     // Show loading state
     confirmSendBtn.innerHTML = '<div class="spinner"></div>';
@@ -597,8 +598,10 @@ async function sendReport() {
             location: getLocation()
         };
         
-        // Send to backend
-        const response = await fetch('api/send-report', {
+        console.log('Sending report data:', reportData);
+        
+        // Use relative path for Vercel
+        const response = await fetch('/api/send-report', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -606,7 +609,13 @@ async function sendReport() {
             body: JSON.stringify(reportData)
         });
         
+        // Check if response is OK
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
         const result = await response.json();
+        console.log('Server response:', result);
         
         if (result.success) {
             // Display submission details
@@ -616,12 +625,12 @@ async function sendReport() {
             sendModal.style.display = 'none';
             showPage('submission-page');
         } else {
-            alert('Failed to send report. Please try again.');
+            alert('Failed to send report: ' + result.message);
         }
         
     } catch (error) {
         console.error('Error:', error);
-        alert('Error sending report. Please check your connection.');
+        alert('Error sending report: ' + error.message);
     } finally {
         // Reset button
         confirmSendBtn.innerHTML = 'Send';

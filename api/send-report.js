@@ -11,7 +11,6 @@ const transporter = nodemailer.createTransport({
 
 // Email template function
 function createEmailTemplate(reportData) {
-    // Format time for display in email
     const formatTimeForEmail = (timeString) => {
         const [hours, minutes] = timeString.split(':');
         const hour = parseInt(hours);
@@ -73,22 +72,41 @@ function createEmailTemplate(reportData) {
 }
 
 module.exports = async (req, res) => {
-    // Set CORS headers
-    res.setHeader('Access-Control-Allow-Credentials', true);
+    // Enhanced CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     
-    // Handle OPTIONS request for CORS preflight
+    // Handle preflight requests
     if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
+        return res.status(200).end();
     }
     
     if (req.method === 'POST') {
         try {
-            const reportData = req.body;
+            console.log('Received request to send report');
             
+            // Parse JSON body
+            let reportData;
+            try {
+                reportData = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+            } catch (parseError) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid JSON format'
+                });
+            }
+            
+            console.log('Report data:', reportData);
+
+            // Validate required fields
+            if (!reportData || !reportData.goals) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Missing required data'
+                });
+            }
+
             // Email options
             const mailOptions = {
                 from: '"HydraTrac System" <hydratrac@gmail.com>',
@@ -114,6 +132,6 @@ module.exports = async (req, res) => {
             });
         }
     } else {
-        res.status(405).json({ message: 'Method not allowed' });
+        res.status(405).json({ message: 'Method not allowed. Use POST.' });
     }
 };
