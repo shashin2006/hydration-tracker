@@ -12,14 +12,15 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static('public'));
 
-// Email configuration
+// Email configuration with environment variables
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: 'hydratrac@gmail.com',
-        pass: 'vkpg buwi kxsp krnf'
+        user: process.env.EMAIL_USER,  // Use environment variable
+        pass: process.env.EMAIL_PASS   // Use environment variable
     }
 });
+
 
 // Email template function - CORRECTED VERSION
 function createEmailTemplate(reportData) {
